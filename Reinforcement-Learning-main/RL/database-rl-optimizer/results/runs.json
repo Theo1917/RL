@@ -1,0 +1,32 @@
+[
+  {
+    "agent": "random",
+    "plan_cost": 3759815.893350837,
+    "ratio_to_optimal": 7.527348729260835,
+    "plan": "[('Assignment', 'Department'), ('Assignment', 'Location'), ('Assignment', 'Invoice')]"
+  },
+  {
+    "agent": "greedy_intermediate",
+    "plan_cost": 728333.3166129627,
+    "ratio_to_optimal": 1.4581615219459196,
+    "plan": "[('Assignment', 'Department'), ('Assignment', 'Invoice'), ('Invoice', 'Location')]"
+  },
+  {
+    "agent": "greedy_cost",
+    "plan_cost": 728333.3166129627,
+    "ratio_to_optimal": 1.4581615219459196,
+    "plan": "[('Assignment', 'Department'), ('Assignment', 'Invoice'), ('Invoice', 'Location')]"
+  },
+  {
+    "agent": "q_learning",
+    "plan_cost": 499487.40633410786,
+    "ratio_to_optimal": 1.0,
+    "plan": "[('Assignment', 'Invoice'), ('Invoice', 'Location'), ('Assignment', 'Department')]"
+  },
+  {
+    "agent": "optimal",
+    "plan_cost": 499487.40633410786,
+    "ratio_to_optimal": 1.0,
+    "plan": "[('Assignment', 'Invoice'), ('Invoice', 'Location'), ('Assignment', 'Department')]"
+  }
+]

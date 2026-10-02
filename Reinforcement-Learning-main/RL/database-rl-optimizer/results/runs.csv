@@ -1,0 +1,6 @@
+agent,plan,plan_cost,ratio_to_optimal
+random,"[('Assignment', 'Department'), ('Assignment', 'Location'), ('Assignment', 'Invoice')]",3759815.893350837,7.527348729260835
+greedy_intermediate,"[('Assignment', 'Department'), ('Assignment', 'Invoice'), ('Invoice', 'Location')]",728333.3166129627,1.4581615219459196
+greedy_cost,"[('Assignment', 'Department'), ('Assignment', 'Invoice'), ('Invoice', 'Location')]",728333.3166129627,1.4581615219459196
+q_learning,"[('Assignment', 'Invoice'), ('Invoice', 'Location'), ('Assignment', 'Department')]",499487.40633410786,1.0
+optimal,"[('Assignment', 'Invoice'), ('Invoice', 'Location'), ('Assignment', 'Department')]",499487.40633410786,1.0
