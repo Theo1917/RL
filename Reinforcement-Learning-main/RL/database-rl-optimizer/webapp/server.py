@@ -18,7 +18,7 @@ from src.q_learning import QLearningAgent
 from src.query import generate_query
 
 
-def build_payload(seed=42, tables=4, episodes=150):
+def build_payload(seed=42, tables=4, episodes=500):
     database = generate_database(tables, seed=seed, indexed=True)
     query = generate_query(database, seed=seed)
     env = JoinOrderEnv(query, start_mode="agent")
@@ -94,7 +94,7 @@ class Handler(BaseHTTPRequestHandler):
             payload = json.loads(self.rfile.read(length) or b"{}")
             result = build_payload(int(payload.get("seed", 42)),
                                    int(payload.get("tables", 4)),
-                                   int(payload.get("episodes", 150)))
+                                   int(payload.get("episodes", 500)))
             self._send(200, "application/json", json.dumps(result).encode())
         except Exception as exc:
             self._send(400, "application/json", json.dumps({"error": str(exc)}).encode())

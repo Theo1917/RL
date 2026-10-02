@@ -37,7 +37,8 @@ def main(seed=42):
     for row in rows:
         print(f"{row['agent']:<22} {row['plan_cost']:>12.2f} "
               f"{row['ratio_to_optimal']:>8.3f}")
-    save_results(rows)
+    save_results(rows, config={"episodes": 500, "start_mode": "agent"},
+                 seed=seed)
     plot_dir = Path("results/plots")
     plot_dir.mkdir(parents=True, exist_ok=True)
     plt.plot([row["plan_cost"] for row in history])

@@ -1,0 +1,38 @@
+[
+  {
+    "agent": "random",
+    "mean_ratio": 1.656585821632996,
+    "ci95": 0.6176430231973946,
+    "queries": 40
+  },
+  {
+    "agent": "greedy_intermediate",
+    "mean_ratio": 1.1313472339531054,
+    "ci95": 0.15845590334811074,
+    "queries": 40
+  },
+  {
+    "agent": "greedy_cost",
+    "mean_ratio": 1.1313521224852503,
+    "ci95": 0.15845558128043916,
+    "queries": 40
+  },
+  {
+    "agent": "q_learning",
+    "mean_ratio": 1.0215729528477069,
+    "ci95": 0.0153310984863237,
+    "queries": 40
+  },
+  {
+    "agent": "optimal",
+    "mean_ratio": 1.0,
+    "ci95": 0.0,
+    "queries": 40
+  },
+  {
+    "agent": "q_learning_shared",
+    "mean_ratio": 1.7348520849672937,
+    "ci95": 0.8657401838329128,
+    "queries": 16
+  }
+]

@@ -54,12 +54,17 @@ database-rl-optimizer/
 │   ├── environment.py      # RL environment (Gymnasium)
 │   ├── q_learning.py       # Tabular Q-learning implementation
 │   ├── baselines.py        # Baseline strategies
-│   └── evaluation.py       # Training and evaluation
+│   ├── evaluation.py       # Training and evaluation
+│   └── pg_validation.py    # Optional PostgreSQL EXPLAIN validation
 │
 ├── tests/
-│   ├── test_project.py     # Unit tests (Milestones 1-3)
-│   ├── test_cost_model.py  # Unit tests (Milestone 4)
-│   └── test_environment.py # Unit tests (Milestone 5)
+│   ├── test_project.py, test_cost_model.py, test_environment.py
+│   ├── test_baselines.py, test_q_learning.py, test_shared_q_learning.py
+│   ├── test_evaluation.py, test_pg_validation.py
+│
+├── demo.py                 # Terminal live demo
+├── webapp/                 # Browser showcase and API server
+├── experiments/            # Re-runnable multi-seed studies
 │
 └── results/
     └── plots/              # Experiment visualizations
@@ -90,8 +95,8 @@ pytest tests/
 - [x] Milestone 9: Small end-to-end training experiment
 - [x] Milestone 10: Evaluation metrics and query splits
 - [x] Milestone 11: CSV/JSON logging and learning-curve visualization
-- [ ] Milestone 12: Sample-efficiency and exploration experiments
-- [ ] Milestone 13: Scaling experiments
+- [x] Milestone 12: Sample-efficiency and exploration experiments
+- [x] Milestone 13: Scaling experiments
 - [ ] Milestone 14: PostgreSQL validation
 - [x] Milestone 15: Terminal live demo
 
@@ -385,6 +390,13 @@ linear, and exponential epsilon schedules plus optimistic initialization are
 supported. The initial key is the empty set when `start_mode="agent"` selects
 the start table; otherwise it is the fixed start-table set.
 
+Two state-table modes are available. The default per-query table uses the
+exact joined-table `frozenset` and is strongest when training and evaluation
+use the same query. `shared=True` uses a generalized key containing joined
+position structure, bucketed log-cardinality, log-selectivity buckets, and
+index flags. It can act on unseen queries with the same action schema, but
+loses table-specific detail and can be substantially less accurate.
+
 ### Cardinality Estimation
 
 Implemented in `src/cost_model.py` (Milestone 4). The module only *reads* the
@@ -462,12 +474,24 @@ use independent-seed results. These are simulator estimates, not measured
 PostgreSQL execution times. Use `start_mode="agent"` for full-order control.
 Indexes are disabled by default; `generate_database(..., indexed=True)` and
 `CostModel(..., use_indexes=True)` opt into the seeded index nested-loop proxy.
+The scripts in `experiments/` use ten seeds by default and write raw CSV logs
+and plots. `run_comparison.py` includes both per-query and held-out shared-Q
+rows; `run_convergence.py`, `run_sample_efficiency.py`, `run_exploration.py`,
+`run_scaling.py`, and `run_reward_ablation.py` cover the requested studies.
 
 ### Results
 Run `python experiments/run_small.py --seed 42` to generate
-`results/runs.csv`, `results/runs.json`, and
+`results/runs.json` plus timestamped `results/run_*.csv` files, and
 `results/plots/small_learning_curve.png`. Results are generated artifacts;
 no performance numbers are hand-written here.
+
+The generated ten-seed comparison currently reports mean simulator cost ratios
+of 1.657 for random, 1.131 for greedy intermediate, 1.131 for greedy cost,
+1.022 for per-query Q-learning, and 1.000 for exhaustive optimal over 40
+queries. The held-out shared-Q result is 1.735 over 16 test queries. These are
+reproducible simulator estimates from `results/comparison_summary.json`, not
+PostgreSQL execution times; the weaker shared result is retained as an honest
+generalization limitation.
 
 ### Browser Showcase
 
@@ -480,11 +504,13 @@ Python requirements.
 
 ### Limitations
 - The simulator assumes independent predicates and uses transparent cost,
-    memory, and latency proxies; it is not `EXPLAIN ANALYZE`.
-- Tabular Q-learning does not scale to arbitrary schemas or rich features,
-    and this project evaluates left-deep plans only.
-- PostgreSQL validation, broad exploration/scaling studies, and the live demo
-    remain future work.
+    memory, and latency proxies; they are not `EXPLAIN ANALYZE` measurements.
+- Tabular Q-learning scales poorly with table count and the shared bucketed
+    state loses information, as shown by its measured held-out gap.
+- Plans are left-deep only, exhaustive search is limited to six tables, and
+    synthetic FK data only approximates real workload distributions.
+- PostgreSQL validation requires Docker or an externally configured server;
+    without it the project reports no fabricated execution-time numbers.
 
 ### Future Work
 
@@ -505,8 +531,8 @@ Possible extensions (not in initial scope):
 | Random, greedy, exhaustive baselines | `src/baselines.py` | Done |
 | Seeded small experiment and logs | `experiments/run_small.py`, `src/evaluation.py` | Done |
 | Index and multi-objective simulator extensions | `src/database.py`, `src/cost_model.py`, `src/environment.py` | Done |
-| PostgreSQL materialization and multi-plan EXPLAIN study | `src/pg_validation.py` | Partial: adapter/skip path only |
-| Multi-seed exploration/scaling studies | Not yet implemented | Not done |
+| PostgreSQL materialization and multi-plan EXPLAIN study | `src/pg_validation.py` | Implemented; live run requires PostgreSQL |
+| Multi-seed exploration/scaling studies | `experiments/run_*.py` | Done; generated simulator logs |
 | Live demo with simulator comparison and PostgreSQL fallback | `demo.py`, `DEMO.md` | Done; PostgreSQL live comparison remains optional |
 
 ## Scientific Integrity
