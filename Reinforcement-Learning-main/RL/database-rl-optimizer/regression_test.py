@@ -18,6 +18,7 @@ import os
 # Check 1: Project structure
 checks = {
     "README.md exists": os.path.exists("README.md"),
+
     "requirements.txt exists": os.path.exists("requirements.txt"),
     ".gitignore exists": os.path.exists(".gitignore"),
     "src/ directory exists": os.path.exists("src/"),
@@ -33,7 +34,7 @@ checks = {
 }
 
 for check, result in checks.items():
-    status = "✓" if result else "✗"
+    status = "PASS" if result else "FAIL"
     print(f"{status} {check}")
 
 milestone1_pass = all(checks.values())
@@ -54,9 +55,9 @@ try:
     from src.database import (
         generate_database, Database, Table, Column, ForeignKey
     )
-    print("✓ Module imports successful")
+    print("PASS Module imports successful")
 except Exception as e:
-    print(f"✗ Module import failed: {e}")
+    print(f"FAIL Module import failed: {e}")
     exit(1)
 
 print()
@@ -69,56 +70,56 @@ test_results = []
 try:
     db = generate_database(num_tables=3, seed=42)
     assert len(db.tables) == 3
-    print("✓ TEST 1: Generate 3-table database")
+    print("PASS TEST 1: Generate 3-table database")
     test_results.append(True)
 except Exception as e:
-    print(f"✗ TEST 1 FAILED: {e}")
+    print(f"FAIL TEST 1: {e}")
     test_results.append(False)
 
 # Test 2: Generate 4 tables
 try:
     db = generate_database(num_tables=4, seed=42)
     assert len(db.tables) == 4
-    print("✓ TEST 2: Generate 4-table database")
+    print("PASS TEST 2: Generate 4-table database")
     test_results.append(True)
 except Exception as e:
-    print(f"✗ TEST 2 FAILED: {e}")
+    print(f"FAIL TEST 2: {e}")
     test_results.append(False)
 
 # Test 3: Generate 6 tables
 try:
     db = generate_database(num_tables=6, seed=42)
     assert len(db.tables) == 6
-    print("✓ TEST 3: Generate 6-table database")
+    print("PASS TEST 3: Generate 6-table database")
     test_results.append(True)
 except Exception as e:
-    print(f"✗ TEST 3 FAILED: {e}")
+    print(f"FAIL TEST 3: {e}")
     test_results.append(False)
 
 # Test 4: Reject too few tables
 try:
     try:
         generate_database(num_tables=2, seed=42)
-        print("✗ TEST 4 FAILED: Should reject 2 tables")
+        print("FAIL TEST 4: Should reject 2 tables")
         test_results.append(False)
     except ValueError:
-        print("✓ TEST 4: Correctly rejects < 3 tables")
+        print("PASS TEST 4: Correctly rejects < 3 tables")
         test_results.append(True)
 except Exception as e:
-    print(f"✗ TEST 4 FAILED: {e}")
+    print(f"FAIL TEST 4: {e}")
     test_results.append(False)
 
 # Test 5: Reject too many tables
 try:
     try:
         generate_database(num_tables=7, seed=42)
-        print("✗ TEST 5 FAILED: Should reject 7 tables")
+        print("FAIL TEST 5: Should reject 7 tables")
         test_results.append(False)
     except ValueError:
-        print("✓ TEST 5: Correctly rejects > 6 tables")
+        print("PASS TEST 5: Correctly rejects > 6 tables")
         test_results.append(True)
 except Exception as e:
-    print(f"✗ TEST 5 FAILED: {e}")
+    print(f"FAIL TEST 5: {e}")
     test_results.append(False)
 
 # Test 6: Every table has primary key
@@ -127,10 +128,10 @@ try:
     for table in db.tables:
         assert table.primary_key
         assert any(col.name == table.primary_key for col in table.columns)
-    print("✓ TEST 6: Every table has valid primary key")
+    print("PASS TEST 6: Every table has valid primary key")
     test_results.append(True)
 except Exception as e:
-    print(f"✗ TEST 6 FAILED: {e}")
+    print(f"FAIL TEST 6: {e}")
     test_results.append(False)
 
 # Test 7: Valid foreign keys
@@ -143,10 +144,10 @@ try:
             ref_table = db.get_table(fk.references_table)
             ref_col_names = [col.name for col in ref_table.columns]
             assert fk.references_column in ref_col_names
-    print("✓ TEST 7: All foreign keys are valid")
+    print("PASS TEST 7: All foreign keys are valid")
     test_results.append(True)
 except Exception as e:
-    print(f"✗ TEST 7 FAILED: {e}")
+    print(f"FAIL TEST 7: {e}")
     test_results.append(False)
 
 # Test 8: Positive row counts
@@ -154,10 +155,10 @@ try:
     db = generate_database(num_tables=4, seed=456)
     for table in db.tables:
         assert table.row_count > 0
-    print("✓ TEST 8: All row counts are positive")
+    print("PASS TEST 8: All row counts are positive")
     test_results.append(True)
 except Exception as e:
-    print(f"✗ TEST 8 FAILED: {e}")
+    print(f"FAIL TEST 8: {e}")
     test_results.append(False)
 
 # Test 9: Valid selectivities
@@ -165,10 +166,10 @@ try:
     db = generate_database(num_tables=5, seed=789)
     for (t1, t2), sel in db.join_selectivities.items():
         assert 0 < sel <= 1
-    print("✓ TEST 9: All selectivities in valid range (0, 1]")
+    print("PASS TEST 9: All selectivities in valid range (0, 1]")
     test_results.append(True)
 except Exception as e:
-    print(f"✗ TEST 9 FAILED: {e}")
+    print(f"FAIL TEST 9: {e}")
     test_results.append(False)
 
 # Test 10: Schema connectivity
@@ -192,10 +193,10 @@ try:
                         visited.add(neighbor)
                         queue.append(neighbor)
             assert len(visited) == len(db.tables)
-    print("✓ TEST 10: All generated schemas are connected")
+    print("PASS TEST 10: All generated schemas are connected")
     test_results.append(True)
 except Exception as e:
-    print(f"✗ TEST 10 FAILED: {e}")
+    print(f"FAIL TEST 10: {e}")
     test_results.append(False)
 
 # Test 11: Reproducibility
@@ -205,10 +206,10 @@ try:
     assert [t.name for t in db1.tables] == [t.name for t in db2.tables]
     assert [t.row_count for t in db1.tables] == [t.row_count for t in db2.tables]
     assert db1.join_selectivities == db2.join_selectivities
-    print("✓ TEST 11: Same seed produces identical output")
+    print("PASS TEST 11: Same seed produces identical output")
     test_results.append(True)
 except Exception as e:
-    print(f"✗ TEST 11 FAILED: {e}")
+    print(f"FAIL TEST 11: {e}")
     test_results.append(False)
 
 # Test 12: Different seeds
@@ -219,10 +220,10 @@ try:
     counts_diff = [t.row_count for t in db1.tables] != [t.row_count for t in db2.tables]
     sel_diff = db1.join_selectivities != db2.join_selectivities
     assert names_diff or counts_diff or sel_diff
-    print("✓ TEST 12: Different seeds produce different databases")
+    print("PASS TEST 12: Different seeds produce different databases")
     test_results.append(True)
 except Exception as e:
-    print(f"✗ TEST 12 FAILED: {e}")
+    print(f"FAIL TEST 12: {e}")
     test_results.append(False)
 
 print()
@@ -256,11 +257,11 @@ print()
 all_passed = milestone1_pass and all(test_results)
 
 if all_passed:
-    print("✓ ALL REGRESSION TESTS PASSED")
+    print("ALL REGRESSION TESTS PASSED")
     print()
     print("Milestones 1 & 2 are fully functional and ready for Milestone 3.")
 else:
-    print("✗ SOME TESTS FAILED")
+    print("SOME TESTS FAILED")
     print()
     print("Please review the failures above.")
 
