@@ -45,7 +45,7 @@ def main(seeds=range(10), episodes=250):
     save_plot(figure, "cost_ratio_comparison.png")
     figure, axis = plt.subplots(figsize=(8, 4))
     for agent, values in grouped.items():
-        axis.boxplot(values, positions=[len(axis.lines) + 1], labels=[agent])
+        axis.boxplot(values, positions=[len(axis.lines) + 1], tick_labels=[agent])
     axis.set_ylabel("Plan cost ratio")
     save_plot(figure, "cost_ratio_boxplot.png")
     if histories:

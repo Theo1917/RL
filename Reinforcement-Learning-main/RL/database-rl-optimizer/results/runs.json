@@ -28,5 +28,80 @@
     "plan_cost": 499487.40633410786,
     "ratio_to_optimal": 1.0,
     "plan": "[('Assignment', 'Invoice'), ('Invoice', 'Location'), ('Assignment', 'Department')]"
+  },
+  {
+    "agent": "random",
+    "plan_cost": 3759815.893350837,
+    "ratio_to_optimal": 7.527348729260835,
+    "plan": "[('Assignment', 'Department'), ('Assignment', 'Location'), ('Location', 'Invoice')]",
+    "run_metadata": {
+      "timestamp": "2026-10-10T09:04:37.208506+00:00",
+      "config": {
+        "episodes": 500,
+        "start_mode": "agent"
+      },
+      "seed": 42,
+      "git_commit": "45c8777935d99443bcd0cdd1d297baf186b328a7"
+    }
+  },
+  {
+    "agent": "greedy_intermediate",
+    "plan_cost": 728333.3166129627,
+    "ratio_to_optimal": 1.4581615219459196,
+    "plan": "[('Assignment', 'Department'), ('Assignment', 'Invoice'), ('Invoice', 'Location')]",
+    "run_metadata": {
+      "timestamp": "2026-10-10T09:04:37.208506+00:00",
+      "config": {
+        "episodes": 500,
+        "start_mode": "agent"
+      },
+      "seed": 42,
+      "git_commit": "45c8777935d99443bcd0cdd1d297baf186b328a7"
+    }
+  },
+  {
+    "agent": "greedy_cost",
+    "plan_cost": 728333.3166129627,
+    "ratio_to_optimal": 1.4581615219459196,
+    "plan": "[('Assignment', 'Department'), ('Assignment', 'Invoice'), ('Invoice', 'Location')]",
+    "run_metadata": {
+      "timestamp": "2026-10-10T09:04:37.208506+00:00",
+      "config": {
+        "episodes": 500,
+        "start_mode": "agent"
+      },
+      "seed": 42,
+      "git_commit": "45c8777935d99443bcd0cdd1d297baf186b328a7"
+    }
+  },
+  {
+    "agent": "q_learning",
+    "plan_cost": 499487.40633410786,
+    "ratio_to_optimal": 1.0,
+    "plan": "[('Assignment', 'Invoice'), ('Invoice', 'Location'), ('Assignment', 'Department')]",
+    "run_metadata": {
+      "timestamp": "2026-10-10T09:04:37.208506+00:00",
+      "config": {
+        "episodes": 500,
+        "start_mode": "agent"
+      },
+      "seed": 42,
+      "git_commit": "45c8777935d99443bcd0cdd1d297baf186b328a7"
+    }
+  },
+  {
+    "agent": "optimal",
+    "plan_cost": 499487.40633410786,
+    "ratio_to_optimal": 1.0,
+    "plan": "[('Assignment', 'Invoice'), ('Invoice', 'Location'), ('Assignment', 'Department')]",
+    "run_metadata": {
+      "timestamp": "2026-10-10T09:04:37.208506+00:00",
+      "config": {
+        "episodes": 500,
+        "start_mode": "agent"
+      },
+      "seed": 42,
+      "git_commit": "45c8777935d99443bcd0cdd1d297baf186b328a7"
+    }
   }
 ]
