@@ -1,6 +1,6 @@
 # Reinforcement Learning for Database Query Plan Optimization
 
-A college-level RL mini-project that uses tabular Q-learning to learn efficient JOIN ORDER selection for relational database queries.
+A RL mini-project that uses tabular Q-learning to learn efficient JOIN ORDER selection for relational database queries.
 
 ## Project Overview
 
@@ -70,46 +70,11 @@ database-rl-optimizer/
     └── plots/              # Experiment visualizations
 ```
 
-## Running Tests
-
-```bash
-pytest tests/
-```
-
 (`gymnasium` is required for the environment tests; it is in `requirements.txt`.)
 
 ## Research Question
 
 **Can a reinforcement learning agent learn effective join-ordering policies for relational query optimization, and how do those policies compare with heuristic strategies across query complexity, exploration settings, and training budgets?**
-
-## Development Status
-
-- [x] Milestone 1: Project setup and minimal structure
-- [x] Milestone 2: Synthetic database generator
-- [x] Milestone 3: Query and join graph representation
-- [x] Milestone 4: Cardinality and cost model
-- [x] Milestone 5: RL environment
-- [x] Milestone 6: Environment extensions, indexes, and optional multi-objective reward
-- [x] Milestone 7: Random, greedy, and exhaustive baselines
-- [x] Milestone 8: Masked tabular Q-learning
-- [x] Milestone 9: Small end-to-end training experiment
-- [x] Milestone 10: Evaluation metrics and query splits
-- [x] Milestone 11: CSV/JSON logging and learning-curve visualization
-- [x] Milestone 12: Sample-efficiency and exploration experiments
-- [x] Milestone 13: Scaling experiments
-- [ ] Milestone 14: PostgreSQL validation
-- [x] Milestone 15: Terminal live demo
-
-## Detailed Documentation
-
-### Synthetic Database Generation (Milestone 2)
-
-The project uses synthetic relational databases rather than real databases for several reasons:
-- **Controlled experiments**: Known statistics enable reproducible results
-- **Scalability**: Easy to generate databases of varying complexity
-- **Educational focus**: Transparent cost models without real database complexity
-- **Reproducibility**: Deterministic generation via random seeds
-
 #### Schema Generation
 
 Databases are generated with 3-6 tables representing common relational entities (Customer, Order, Product, etc.). Each generation creates:
@@ -119,15 +84,6 @@ Databases are generated with 3-6 tables representing common relational entities 
 3. **Primary keys**: Every table has a unique identifier (e.g., `customer_id`)
 4. **Foreign keys**: Child tables reference parent tables, defining valid join operations
 
-#### Row Counts
-
-Table sizes follow a logarithmic distribution to create realistic variation:
-- Small tables: ~1,000 rows
-- Medium tables: ~10,000-100,000 rows  
-- Large tables: ~100,000-1,000,000 rows
-
-This variation is critical because different join orders produce different intermediate result sizes, making the optimization problem meaningful.
-
 #### Join Selectivity
 
 Each foreign key relationship has an associated selectivity estimate representing the fraction of the Cartesian product that appears in the join result. Selectivities are generated with log-uniform distribution between 0.01% and 10%.
@@ -135,24 +91,6 @@ Each foreign key relationship has an associated selectivity estimate representin
 For example, if `Customers` has 10,000 rows and `Orders` has 100,000 rows with selectivity 0.01:
 - Cartesian product: 10,000 × 100,000 = 1,000,000,000
 - Estimated join result: 1,000,000,000 × 0.01 = 10,000,000 rows
-
-#### Reproducibility
-
-All generation is deterministic using explicit random seeds:
-```python
-db = generate_database(num_tables=4, seed=42)
-```
-
-The same seed always produces identical schemas, row counts, and selectivities. Different seeds produce different databases, enabling varied training and test sets.
-
-#### Running the Generator
-
-Demonstrate the generator:
-```bash
-python -m src.database
-```
-
-This generates a 4-table database with seed 42 and displays its structure.
 
 ### Query and Join Graph Representation (Milestone 3)
 
@@ -183,13 +121,6 @@ Each `Join` specifies:
 #### Valid Join Detection
 
 The system determines whether two tables can be joined based on the database schema's foreign key relationships. Only joins corresponding to actual foreign keys are permitted. This prevents the agent from attempting impossible operations.
-
-Example:
-```python
-query.can_join("Customer", "Order")  # True (foreign key exists)
-query.can_join("Customer", "Product")  # False (no direct relationship)
-```
-
 #### Partial Join Plans
 
 A `PartialJoinPlan` tracks the state during join-order construction:
@@ -208,38 +139,6 @@ Given a partial plan, the system identifies which tables can be joined next. A t
 
 This functionality ensures the RL agent only sees valid actions at each step.
 
-#### Canonical Representations
-
-All table sets use `frozenset` for deterministic representation:
-```python
-{"Order", "Customer"} == {"Customer", "Order"}  # Same canonical form
-```
-
-This is critical for Q-learning because states must have stable hashable keys for the Q-table.
-
-#### SQL Generation
-
-The system can generate readable SQL (for debugging/visualization only):
-```sql
-SELECT *
-FROM Customer
-JOIN Order
-    ON Customer.customer_id = Order.customer_id
-JOIN OrderItem
-    ON Order.order_id = OrderItem.order_id
-;
-```
-
-**Important**: This is NOT an execution layer. The structured representation is the source of truth.
-
-#### Running the Query Generator
-
-Demonstrate query generation:
-```bash
-python -m src.query
-```
-
-This generates a database, creates a query, and demonstrates valid joins and partial plan construction.
 
 #### How This Supports RL
 
@@ -258,35 +157,6 @@ Implemented in `src/environment.py` as `JoinOrderEnv`, a
 `gymnasium.utils.env_checker.check_env`). It builds directly on `Query`,
 `PartialJoinPlan` and `CostModel`; nothing in Milestones 1-4 was changed.
 
-```python
-from src.database import generate_database
-from src.query import generate_query
-from src.environment import JoinOrderEnv
-
-env = JoinOrderEnv(generate_query(generate_database(4, seed=42), seed=42))
-obs, info = env.reset()
-obs, reward, terminated, truncated, info = env.step(info["valid_actions"][0])
-```
-
-Demonstration (no learning, just the interface): `python -m src.environment`.
-
-#### MDP definition
-
-| Element | Definition |
-|---|---|
-| Episode start | `create_initial_plan(query, start_table)`: one table joined. Default start is `query.tables[0]`; override with `JoinOrderEnv(..., start_table=)` or `reset(options={"start_table": name})`. |
-| Action | "Join table *t* next" (left-deep plan). |
-| Transition | Deterministic (below). |
-| Reward | `-incremental_cost` from the cost model. |
-| Termination | All tables joined, after exactly `n_tables - 1` valid steps. |
-
-Formally, `S` is the canonical joined-table set plus the observation features;
-`A` is `Discrete(n)` masked to unjoined adjacent tables; `P` is deterministic
-and applies the selected join; `R` is negative incremental estimated cost by
-default (or the documented normalized weighted objective); `gamma` is the
-agent configuration (default 0.95). The horizon is `n - 1` for a fixed start
-and `n` when the agent selects the start, with termination when all tables are
-joined. The initial agent-start state is the empty set.
 
 #### Action representation and mapping
 
@@ -308,79 +178,6 @@ and has a join predicate with the current plan
 (`PartialJoinPlan.get_available_joins`). The mask is all zeros once the plan is
 complete. The action-space size never changes during an episode.
 
-#### Observation representation
-
-`spaces.Dict` with these features (`n` = number of tables, positions follow the
-action ordering):
-
-| Key | Type / range | Meaning |
-|---|---|---|
-| `joined` | `MultiBinary(n)`, int8 | 1 if the table is already in the plan (remaining tables = `1 - joined`) |
-| `candidate_selectivity` | `Box(n,)` float32 in [0, 1] | For each legal next join: combined selectivity of all predicates linking it to the plan; 0.0 for illegal actions (real selectivities are > 0) |
-| `log_cardinality` | `Box(1,)` float32 >= 0 | log10 of the estimated size of the current intermediate relation |
-| `log_accumulated_cost` | `Box(1,)` float32 >= 0 | log10(1 + cost paid so far) |
-| `has_index` | `MultiBinary(n)` | 1 when the table has configured indexed columns |
-
-Variable query size is handled by fixed-length vectors indexed by the action
-ordering (queries have 3-6 tables). Upper bounds of the two `Box` features are
-derived from the query's row counts (see module docstring).
-
-**Tabular Q-learning:** the expected future cost of a state depends only on
-which tables are joined, so `env.state_key()` returns the canonical
-`frozenset` of joined table names (equivalent to `tuple(obs["joined"])`).
-Accumulated cost is path-dependent and continuous, so it is deliberately *not*
-part of the tabular key; the continuous features are for function
-approximation and debugging.
-
-#### Transition logic
-
-`step(action)`:
-
-1. Validate the action (integer id, in range, not joined, adjacent to the plan).
-2. `CostModel.estimate_plan_join(plan, table)` -> output cardinality and cost.
-3. `PartialJoinPlan.apply_join(table)` -> new partial plan.
-4. Commit the new plan and add the step cost to the accumulated cost.
-5. Compute the next mask and check completion.
-6. Return `(observation, reward, terminated, truncated, info)`.
-
-#### Reward
-
-```
-reward = -join_cost = -(|left intermediate| + |right table| + |output|)
-```
-
-No shaping. The undiscounted return of an episode equals `-plan_cost` from the
-cost model, so maximizing return minimizes total estimated cost.
-
-#### Terminal condition and invalid actions
-
-| Situation | `terminated` | `truncated` | `info["status"]` |
-|---|---|---|---|
-| Valid step, tables remain | False | False | `ongoing` |
-| Valid step completes the plan | True | False | `completed` |
-| Invalid action | False | False | `invalid_action` (`info["invalid_action"]=True`, `info["invalid_reason"]`) |
-| More than `max_invalid_actions` (default 100) invalid actions | False | True | `truncated` |
-
-An invalid action leaves the plan, costs and mask untouched and returns reward
-`-invalid_action_penalty` (default `0.0`, i.e. no shaping; use the mask instead).
-Calling `step()` before `reset()` or after the episode ended raises `RuntimeError`.
-
-#### Info dictionary
-
-`status`, `invalid_action`, `invalid_reason`, `is_complete`, `selected_action`,
-`selected_table`, `selected_join` (the `(joined_table, new_table)` pair recorded
-in the plan), `applied_joins` (all predicates applied), `incremental_cost`,
-`estimated_cardinality` (current intermediate), `left_cardinality`,
-`accumulated_cost`, `start_table`, `partial_plan`, `joined_tables`,
-`remaining_tables`, `valid_actions`, `action_mask`, `steps_taken`,
-`invalid_actions_taken`, `explanation`. It describes only the present state and
-the transition just taken (no lookahead costs or oracle information).
-
-#### Determinism
-
-The environment uses no randomness: the same query, start table and action
-sequence always give identical observations, rewards and termination. The
-`seed` argument of `reset()` is accepted for API compatibility only.
 
 ### Q-Learning Algorithm
 `src/q_learning.py` provides `QLearningAgent` with the standard masked update
@@ -397,94 +194,6 @@ position structure, bucketed log-cardinality, log-selectivity buckets, and
 index flags. It can act on unseen queries with the same action schema, but
 loses table-specific detail and can be substantially less accurate.
 
-### Cardinality Estimation
-
-Implemented in `src/cost_model.py` (Milestone 4). The module only *reads* the
-`Query`/`Database`; it never modifies them, and all results are deterministic.
-
-**Two-relation join** (uses `Join.selectivity`, which comes from
-`Database.join_selectivities`):
-
-```
-|R JOIN S| = |R| x |S| x selectivity(R, S)
-```
-
-**Joining a table T onto an intermediate result covering the table set S:**
-
-```
-|S JOIN T| = |S| x |T| x prod(selectivity(a, T) for every join edge (a, T), a in S)
-```
-
-Every foreign-key predicate connecting T to the already-joined tables is
-applied (independence assumption). In tree-shaped schemas exactly one edge
-connects T to S, so this is the two-relation formula. The database generator
-can add one extra edge (a cycle); in that case both predicates filter the
-result. (`PartialJoinPlan.apply_join` records only one partner per step, so the
-cost model looks at all edges itself and `query.py` is left unchanged.)
-
-**Closed form used by the code** (result depends only on *which* tables are
-joined, never on the order, which keeps the future RL state well defined):
-
-```
-card(X) = prod(row_count(t) for t in X) x prod(selectivity(e) for every edge e inside X)
-```
-
-Estimates are floored at 1 row (`min_cardinality`, configurable, `0.0`
-disables) so very selective joins never give 0 or fractional rows.
-
-Example (README figures): `Customers` 10,000 rows, `Orders` 100,000 rows,
-selectivity 0.01 -> 10,000 x 100,000 x 0.01 = 10,000,000 rows.
-
-### Cost Model
-
-A transparent, educational cost model (not PostgreSQL's optimizer):
-
-```
-join_cost = |left input| + |right input| + |estimated output|
-plan_cost = sum of join_cost over all join steps made so far
-```
-
-The left input is the current intermediate relation, the right input is the
-base table being added. A plan containing only its start table costs 0. The
-output term charges for materializing intermediate results, which is what makes
-join order matter.
-
-API summary (`CostModel(query)`):
-
-- `estimate_join(left_tables, right_table)` -> `JoinEstimate` (sizes, selectivity, output rows, cost)
-- `estimate_plan_join(plan, candidate)` -> cost and resulting cardinality of adding `candidate` to a `PartialJoinPlan`
-- `estimate_available_joins(plan)` -> estimate for every valid next join
-- `current_cardinality(plan)`, `remaining_tables(plan)`, `plan_cost(plan)`
-- Invalid joins (unknown table, already joined, no foreign key path, empty/disconnected input) raise `InvalidJoinError` (a `ValueError`)
-
-Demonstration: `python -m src.cost_model`. Tests: `python -m pytest tests/test_cost_model.py`.
-
-### Baselines
-`src/baselines.py` exposes `choose_action(env)` for seeded random, minimum
-intermediate, minimum immediate cost, and exhaustive optimal agents.
-Exhaustive search enumerates valid connected left-deep plans and supplies the
-simulator reference optimum. `run_episode` returns plan, estimated cost, and
-final info.
-
-### Experimental Methodology
-`src/evaluation.py` reports estimated cost, ratio/gap to exhaustive optimal,
-peak intermediate rows, memory proxy, and `log10(1 + cost)` latency proxy.
-Query generation and train/test splitting are seeded; confidence intervals
-use independent-seed results. These are simulator estimates, not measured
-PostgreSQL execution times. Use `start_mode="agent"` for full-order control.
-Indexes are disabled by default; `generate_database(..., indexed=True)` and
-`CostModel(..., use_indexes=True)` opt into the seeded index nested-loop proxy.
-The scripts in `experiments/` use ten seeds by default and write raw CSV logs
-and plots. `run_comparison.py` includes both per-query and held-out shared-Q
-rows; `run_convergence.py`, `run_sample_efficiency.py`, `run_exploration.py`,
-`run_scaling.py`, and `run_reward_ablation.py` cover the requested studies.
-
-### Results
-Run `python experiments/run_small.py --seed 42` to generate
-`results/runs.json` plus timestamped `results/run_*.csv` files, and
-`results/plots/small_learning_curve.png`. Results are generated artifacts;
-no performance numbers are hand-written here.
-
 The generated ten-seed comparison currently reports mean simulator cost ratios
 of 1.657 for random, 1.131 for greedy intermediate, 1.131 for greedy cost,
 1.022 for per-query Q-learning, and 1.000 for exhaustive optimal over 40
@@ -493,57 +202,4 @@ reproducible simulator estimates from `results/comparison_summary.json`, not
 PostgreSQL execution times; the weaker shared result is retained as an honest
 generalization limitation.
 
-### Browser Showcase
 
-Start the full-stack showcase with `python -m webapp.server --port 8000` or
-`make web`, then open `http://127.0.0.1:8000`. The Python API in
-`webapp/server.py` runs the actual simulator, baselines, and Q-learning agent;
-the browser client presents the schema, policy trace, learning curve, and
-benchmark comparison. It is intentionally dependency-free beyond the existing
-Python requirements.
-
-### Limitations
-- The simulator assumes independent predicates and uses transparent cost,
-    memory, and latency proxies; they are not `EXPLAIN ANALYZE` measurements.
-- Tabular Q-learning scales poorly with table count and the shared bucketed
-    state loses information, as shown by its measured held-out gap.
-- Plans are left-deep only, exhaustive search is limited to six tables, and
-    synthetic FK data only approximates real workload distributions.
-- PostgreSQL validation requires Docker or an externally configured server;
-    without it the project reports no fabricated execution-time numbers.
-
-### Future Work
-
-Possible extensions (not in initial scope):
-- Deep Q-Networks (DQN)
-- Policy gradient methods (PPO)
-- Physical operator optimization
-- Index selection
-- Distributed databases
-- Real PostgreSQL validation
-
-### Requirement Gap Check
-
-| Brief item | Implementation | Status |
-|---|---|---|
-| Synthetic 3-6 table MDP | `src/database.py`, `src/query.py`, `src/environment.py` | Done |
-| Q-learning and valid-action masking | `src/q_learning.py` | Done |
-| Random, greedy, exhaustive baselines | `src/baselines.py` | Done |
-| Seeded small experiment and logs | `experiments/run_small.py`, `src/evaluation.py` | Done |
-| Index and multi-objective simulator extensions | `src/database.py`, `src/cost_model.py`, `src/environment.py` | Done |
-| PostgreSQL materialization and multi-plan EXPLAIN study | `src/pg_validation.py` | Implemented; live run requires PostgreSQL |
-| Multi-seed exploration/scaling studies | `experiments/run_*.py` | Done; generated simulator logs |
-| Live demo with simulator comparison and PostgreSQL fallback | `demo.py`, `DEMO.md` | Done; PostgreSQL live comparison remains optional |
-
-## Scientific Integrity
-
-This project adheres to strict scientific honesty:
-- No fabricated results
-- Clear distinction between estimated cost and actual execution time
-- Transparent synthetic cost models (not claimed as real database internals)
-- Honest reporting of unexpected results
-- Reproducible experiments with fixed random seeds
-
-## License
-
-Academic project for educational purposes.
